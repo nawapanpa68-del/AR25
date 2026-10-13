@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตามล่าหารูปแบบผลไม้ (Fruit Pattern Hunt)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts - Kanit for clean Thai typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        * {
+            font-family: 'Kanit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: #f0fdf4;
+            background-image: 
+                radial-gradient(#bbf7d0 1.5px, transparent 1.5px), 
+                radial-gradient(#bbf7d0 1.5px, #f0fdf4 1.5px);
+            background-size: 60px 60px;
+            background-position: 0 0, 30px 30px;
+        }
+
+        /* Floating Animation */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(234, 179, 8, 0.4)); }
+            50% { transform: scale(1.05); filter: drop-shadow(0 0 15px rgba(234, 179, 8, 0.8)); }
+        }
+
+        @keyframes bounceTarget {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .animate-float {
+            animation: floatSlow 3.5s ease-in-out infinite;
+        }
+
+        .animate-pulse-glow {
+            animation: pulseGlow 2s infinite;
+        }
+
+        .bounce-target {
+            animation: bounceTarget 1.2s ease-in-out infinite;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #a855f7;
+            border-radius: 10px;
+        }
+
+        .fruit-card {
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .fruit-card:hover {
+            transform: translateY(-6px) scale(1.05);
+        }
+
+        .fruit-card:active {
+            transform: translateY(-2px) scale(0.98);
+        }
+
+        .slot-target {
+            border: 3px dashed #f59e0b;
+            background-color: #fffbeb;
+            transition: all 0.3s ease;
+        }
+
+        .slot-target.drag-over {
+            background-color: #fef3c7;
+            border-color: #d97706;
+            transform: scale(1.08);
+        }
+
+        /* Claymorphism style buttons */
+        .btn-clay-green {
+            background: linear-gradient(145deg, #4ade80, #22c55e);
+            box-shadow: 0 6px 0 #15803d, 0 10px 15px rgba(0,0,0,0.1);
+        }
+        .btn-clay-green:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #15803d;
+        }
+
+        .btn-clay-amber {
+            background: linear-gradient(145deg, #fbbf24, #f59e0b);
+            box-shadow: 0 6px 0 #b45309, 0 10px 15px rgba(0,0,0,0.1);
+        }
+        .btn-clay-amber:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #b45309;
+        }
+
+        .btn-clay-indigo {
+            background: linear-gradient(145deg, #818cf8, #6366f1);
+            box-shadow: 0 6px 0 #4338ca, 0 10px 15px rgba(0,0,0,0.1);
+        }
+        .btn-clay-indigo:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #4338ca;
+        }
+
+        /* Glassmorphism panel */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between text-slate-800 antialiased selection:bg-yellow-200">
+
+    <!-- Header -->
+    <header class="w-full max-w-5xl mx-auto px-4 pt-4 pb-2">
+        <div class="glass-panel rounded-2xl p-3 md:p-4 shadow-lg flex flex-wrap justify-between items-center gap-3">
+            <!-- App Title -->
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-amber-400 rounded-2xl flex items-center justify-center text-2xl shadow-md text-white transform -rotate-3 hover:rotate-0 transition-transform">
+                    🍓
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-black text-emerald-700 tracking-tight leading-none">
+                        ตามล่าหารูปแบบผลไม้
+                    </h1>
+                    <p class="text-xs md:text-sm font-semibold text-emerald-600/80 mt-0.5">
+                        ฝึกทักษะการสังเกตรูปแบบ (Pattern Recognition)
+                    </p>
+                </div>
+            </div>
+
+            <!-- Score and Level Controls -->
+            <div class="flex items-center space-x-2 md:space-x-4">
+                <!-- Level Badge -->
+                <div class="bg-indigo-50 border-2 border-indigo-200 px-3 py-1.5 rounded-xl flex items-center space-x-2">
+                    <i class="fa-solid fa-flag text-indigo-500 text-sm"></i>
+                    <span class="text-xs font-bold text-indigo-400 uppercase">ด่าน:</span>
+                    <span id="level-display" class="text-base font-extrabold text-indigo-700">1 / 10</span>
+                </div>
+
+                <!-- Stars Counter -->
+                <div class="bg-amber-50 border-2 border-amber-200 px-3 py-1.5 rounded-xl flex items-center space-x-1.5">
+                    <i class="fa-solid fa-star text-amber-500 text-base"></i>
+                    <span id="stars-display" class="text-base font-extrabold text-amber-700">0</span>
+                </div>
+
+                <!-- Sound Toggle -->
+                <button id="sound-btn" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 border-2 border-slate-300 text-slate-700 flex items-center justify-center transition-colors">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-lg"></i>
+                </button>
+
+                <!-- Help / Rule Modal Toggle -->
+                <button id="help-btn" class="w-10 h-10 rounded-xl bg-teal-100 hover:bg-teal-200 border-2 border-teal-300 text-teal-700 flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-circle-question text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Playground Area -->
+    <main class="w-full max-w-5xl mx-auto px-4 py-2 flex-grow flex flex-col justify-center">
+        <!-- Main Game Card -->
+        <div class="glass-panel rounded-3xl p-4 md:p-8 shadow-2xl relative overflow-hidden my-auto border-2 border-emerald-100">
+            
+            <!-- Instructions Header -->
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center space-x-2 bg-emerald-100/80 text-emerald-800 text-sm md:text-base font-extrabold px-4 py-1.5 rounded-full border border-emerald-200 mb-2">
+                    <i class="fa-solid fa-lightbulb text-amber-500 animate-pulse"></i>
+                    <span id="level-instructions">ด่านที่ 1: สังเกตแถวผลไม้ แล้วหาว่าผลไม้ชิ้นต่อไปคืออะไร?</span>
+                </div>
+                <p id="pattern-type-badge" class="text-xs text-slate-500 font-semibold">
+                    รูปแบบ: ABAB (สลับกัน 2 ชนิด)
+                </p>
+            </div>
+
+            <!-- Pattern Display Belt / Shelf -->
+            <div class="relative bg-amber-100/70 rounded-2xl p-4 md:p-6 mb-8 border-2 border-amber-200/80 shadow-inner">
+                <div class="absolute inset-x-0 top-1/2 h-2 bg-amber-300/50 transform -translate-y-1/2 z-0"></div>
+                
+                <div id="fruit-sequence-container" class="relative z-10 flex flex-wrap items-center justify-center gap-2 md:gap-4 min-h-[120px] py-2">
+                    <!-- Dynamic Fruit Elements & Target Slot Inserted Here -->
+                </div>
+            </div>
+
+            <!-- Choice Options Area -->
+            <div class="bg-white/80 rounded-2xl p-4 border-2 border-slate-200/80 shadow-sm">
+                <h3 class="text-center text-sm md:text-base font-bold text-slate-600 mb-3 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-hand-pointer text-indigo-500"></i>
+                    <span>คลิกเลือก หรือ ลากภาพผลไม้ไปวางในช่องว่าง ❓</span>
+                </h3>
+
+                <div id="fruit-options-container" class="flex flex-wrap items-center justify-center gap-3 md:gap-6 min-h-[100px] py-2">
+                    <!-- Choice Fruit Cards Generated via JS -->
+                </div>
+            </div>
+
+            <!-- Action / Feedback Message -->
+            <div id="feedback-bar" class="mt-4 min-h-[42px] flex items-center justify-center text-center font-bold text-base md:text-lg transition-all duration-300">
+                <span class="text-slate-500 text-sm font-medium">✨ ลากหรือแตะที่ผลไม้คำตอบเพื่อเติมเต็มรูปแบบ</span>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Level Selector Bar -->
+    <div class="w-full max-w-5xl mx-auto px-4 pb-4">
+        <div class="glass-panel rounded-2xl p-3 shadow-md flex items-center justify-between overflow-x-auto">
+            <span class="text-xs md:text-sm font-bold text-slate-600 mr-2 whitespace-nowrap">
+                <i class="fa-solid fa-layer-group text-emerald-500"></i> เลือกด่าน:
+            </span>
+            <div id="level-dots-container" class="flex items-center space-x-1.5 md:space-x-2 overflow-x-auto py-1">
+                <!-- Level dots generated here -->
+            </div>
+            <button id="reset-progress-btn" class="ml-2 text-xs text-slate-400 hover:text-rose-500 transition-colors whitespace-nowrap px-2 py-1 rounded">
+                <i class="fa-solid fa-rotate-right"></i> เริ่มใหม่
+            </button>
+        </div>
+    </div>
+
+    <!-- Victory Modal Overlay -->
+    <div id="victory-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 md:p-8 text-center shadow-2xl transform scale-90 transition-transform duration-300 border-4 border-amber-300 relative overflow-hidden" id="victory-card">
+            
+            <div class="text-6xl mb-2 animate-bounce">🎉</div>
+            <h2 class="text-2xl md:text-3xl font-black text-emerald-600 mb-1">
+                ถูกต้องแล้วครับ!
+            </h2>
+            <p id="victory-subtitle" class="text-slate-600 font-semibold mb-4">
+                เก่งมาก! น้องเรียนรู้รูปแบบได้อย่างแม่นยำ
+            </p>
+
+            <div class="flex justify-center items-center space-x-2 my-4 bg-amber-50 p-4 rounded-2xl border border-amber-200">
+                <div class="text-left">
+                    <p class="text-xs text-amber-700 font-bold uppercase">รูปแบบในด่านนี้:</p>
+                    <p id="victory-pattern-explain" class="text-sm font-bold text-slate-800">🍎 🍌 🍎 🍌 🍎</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-center space-x-3 mt-6">
+                <button id="next-level-btn" class="w-full py-3.5 px-6 rounded-2xl text-white font-black text-lg btn-clay-green flex items-center justify-center space-x-2">
+                    <span>ด่านต่อไป</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Completed Celebration Modal -->
+    <div id="game-complete-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 md:p-8 text-center shadow-2xl border-4 border-amber-400">
+            <div class="text-7xl mb-3 animate-bounce">🏆</div>
+            <h2 class="text-3xl font-black text-amber-500 mb-2">
+                สุดยอดนักสืบผลไม้!
+            </h2>
+            <p class="text-slate-600 font-semibold mb-6">
+                น้องพิชิตครบทุกด่านการหารูปแบบผลไม้แล้ว!
+            </p>
+            <div class="bg-yellow-50 rounded-2xl p-4 border border-yellow-200 mb-6">
+                <div class="flex justify-around items-center">
+                    <div>
+                        <p class="text-xs text-slate-500 font-bold">ดาวรวมที่ได้</p>
+                        <p id="final-stars" class="text-3xl font-black text-amber-500">⭐ 30</p>
+                    </div>
+                    <div class="h-8 w-px bg-yellow-200"></div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-bold">ความแม่นยำ</p>
+                        <p id="final-accuracy" class="text-3xl font-black text-emerald-600">100%</p>
+                    </div>
+                </div>
+            </div>
+            <button id="restart-game-btn" class="w-full py-4 px-6 rounded-2xl text-white font-black text-xl btn-clay-amber flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span>เล่นใหม่อีกครั้ง</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Instructions / Help Modal -->
+    <div id="help-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 text-left shadow-2xl border-2 border-teal-200">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-extrabold text-teal-700 flex items-center space-x-2">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <span>วิธีเล่น & การเรียนรู้</span>
+                </h3>
+                <button id="close-help-btn" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3 text-sm text-slate-600">
+                <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                    <p class="font-bold text-emerald-800">1. สังเกตแถวผลไม้ 🔍</p>
+                    <p class="text-xs text-emerald-700">ดูลักษณะการเรียงลำดับซ้ำๆ ของผลไม้ในแต่ละแถว</p>
+                </div>
+                <div class="bg-amber-50 p-3 rounded-xl border border-amber-100">
+                    <p class="font-bold text-amber-800">2. หาคำตอบที่ขาดหายไป ❓</p>
+                    <p class="text-xs text-amber-700">หาว่าผลไม้ชิ้นใดควรจะอยู่ตรงช่องที่มีเครื่องหมายคำถาม</p>
+                </div>
+                <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+                    <p class="font-bold text-indigo-800">3. ลากหรือกดเลือกผลไม้ 🎯</p>
+                    <p class="text-xs text-indigo-700">สามารถลากตัวเลือกผลไม้ด้านล่างไปวาง หรือจะคลิกเลือกก็ได้</p>
+                </div>
+            </div>
+
+            <button id="understood-btn" class="w-full mt-5 py-3 rounded-xl text-white font-bold bg-teal-600 hover:bg-teal-700 transition-colors">
+                เข้าใจแล้ว! เริ่มเล่นเลย
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Audio Synthesizer Class using Web Audio API
+        class SoundEffects {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playPop() {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+
+            playCorrect() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + i * 0.08);
+                    gain.gain.setValueAtTime(0.25, now + i * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.08);
+                    osc.stop(now + i * 0.08 + 0.25);
+                });
+            }
+
+            playWrong() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.linearRampToValueAtTime(140, now + 0.25);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            }
+
+            playFanfare() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const tune = [
+                    { f: 523.25, d: 0.15 },
+                    { f: 659.25, d: 0.15 },
+                    { f: 783.99, d: 0.15 },
+                    { f: 1046.50, d: 0.4 }
+                ];
+                let delay = 0;
+                tune.forEach(note => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(note.f, now + delay);
+                    gain.gain.setValueAtTime(0.3, now + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + delay + note.d);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + delay);
+                    osc.stop(now + delay + note.d);
+                    delay += note.d + 0.03;
+                });
+            }
+        }
+
+        const soundFX = new SoundEffects();
+    </script>
+
+    <script>
+        // High Quality Flat Vector SVG Fruit Assets
+        const FRUIT_SVGS = {
+            apple: `
+                <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-md">
+                    <path d="M50 22 C 45 10, 35 12, 35 12 C 35 12, 45 18, 48 24" fill="none" stroke="#713f12" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M50 22 C 58 10, 72 14, 65 24 C 60 22, 53 22, 50 22" fill="#22c55e"/>
+                    <path d="M25 35 C 15 45, 15 70, 35 90 C 45 98, 50 92, 50 92 C 50 92, 55 98, 65 90 C 85 70, 85 45, 75 35 C 65 25, 54 32, 50 35 C 46 32, 35 25, 25 35 Z" fill="#ef4444"/>
+                    <ellipse cx="38" cy="45" rx="5" ry="9" fill="#f87171" transform="rotate(-20 38 45)"/>
+                    <circle cx="42" cy="55" r="2.5" fill="#ffffff"/>
+                    <circle cx="58" cy="55" r="2.5" fill="#ffffff"/>
+                    <path d="M 45 64 Q 50 68 55 64" fill="none" stroke="#7f1d1d" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>`,
+            banana: `
+                <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-md">
+                    <path d="M 20 30 C 30 75, 75 80, 85 50 C 85 50, 70 92, 18 42 C 12 36, 16 28, 20 30 Z" fill="#eab308"/>
+                    <path d="M 22 31 C 32 70, 72 75, 82 48" fill="none" stroke="#fef08a" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M 18 42 C 15 38, 12 32, 18 26 C 22 22, 26 26, 22 31" fill="#854d0e"/>
+                    <path d="M 85 50 C 88 48, 90 52, 87 55" fill="#854d0e"/>
+                    <circle cx="40" cy="52" r="2.5" fill="#713f12"/>
+                    <circle cx="52" cy="56" r="2.5" fill="#713f12"/>
+                    <path d="M 43 62 Q 47 65 51 62" fill="none" stroke="#713f12" stroke-width="2" stroke-linecap="round"/>
+                </svg>`,
+            orange: `
+                <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-md">
+                    <circle cx="50" cy="55" r="36" fill="#f97316"/>
+                    <circle cx="50" cy="55" r="32" fill="#fb923c"/>
+                    <path d="M50 20 C 45 10, 38 15, 38 15 C 38 15, 46 16, 49 21" fill="none" stroke="#713f12" stroke-width="3"/>
+                    <path d="M50 20 C 62 10, 68 22, 52 22 Z" fill="#22c55e"/>
+                    <ellipse cx="38" cy="42" rx="4" ry="7" fill="#fed7aa" transform="rotate(-25 38 42)"/>
+                    <circle cx="42" cy="56" r="2.5" fill="#431407"/>
+                    <circle cx="58" cy="56" r="2.5" fill="#431407"/>
+                    <path d="M 45 65 Q 50 69 55 65" fill="none" stroke="#431407" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>`,
+            pineapple: `
+                <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-md">
+                    <!-- Crown -->
+                    <path d="M 50 35 L 35 12 C 42 22, 45 28, 45 32 Z" fill="#15803d"/>
+                    <path d="M 50 35 L 50 8 C 52 20, 52 28, 50 35 Z" fill="#22c55e"/>
+                    <path d="M 50 35 L 65 12 C 58 22, 55 28, 55 32 Z" fill="#15803d"/>
+                    <!-- Body -->
+                    <rect x="26" y="32" width="48" height="58" rx="24" fill="#eab308"/>
+                    <!-- Texture Pattern -->
+                    <path d="M 32 45 L 68 75 M 32 60 L 68 45 M 38 36 L 62 84 M 62 36 L 38 84" stroke="#ca8a04" stroke-width="3" stroke-linecap="round"/>
+                    <!-- Face -->
+                    <circle cx="42" cy="54" r="2.5" fill="#422006"/>
+                    <circle cx="58" cy="54" r="2.5" fill="#422006"/>
+                    <path d="M 46 62 Q 50 66 54 62" fill="none" stroke="#422006" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>`,
+            strawberry: `
+                <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-md">
+                    <path d="M 50 25 C 30 10, 20 20, 50 30 C 80 20, 70 10, 50 25 Z" fill="#15803d"/>
+                    <path d="M 50 25 C 20 28, 18 60, 42 90 C 48 96, 52 96, 58 90 C 82 60, 80 28, 50 25 Z" fill="#f43f5e"/>
+                    <!-- Seeds -->
+                    <circle cx="32" cy="45" r="1.5" fill="#fef08a"/>
+                    <circle cx="45" cy="40" r="1.5" fill="#fef08a"/>
+                    <circle cx="68" cy="45" r="1.5" fill="#fef08a"/>
+                    <circle cx="58" cy="52" r="1.5" fill="#fef08a"/>
+                    <circle cx="35" cy="65" r="1.5" fill="#fef08a"/>
+                    <circle cx="62" cy="68" r="1.5" fill="#fef08a"/>
+                    <circle cx="50" cy="78" r="1.5" fill="#fef08a"/>
+                    <!-- Eyes -->
+                    <circle cx="42" cy="52" r="2.5" fill="#4c0519"/>
+                    <circle cx="58" cy="52" r="2.5" fill="#4c0519"/>
+                    <path d="M 46 59 Q 50 62 54 59" fill="none" stroke="#4c0519" stroke-width="2" stroke-linecap="round"/>
+                </svg>`,
+            watermelon: `
+                <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-md">
+                    <path d="M 15 35 Q 50 95 85 35 Z" fill="#15803d"/>
+                    <path d="M 18 35 Q 50 90 82 35 Z" fill="#bbf7d0"/>
+                    <path d="M 22 35 Q 50 84 78 35 Z" fill="#ef4444"/>
+                    <!-- Seeds -->
+                    <ellipse cx="38" cy="48" rx="2" ry="3.5" fill="#18181b"/>
+                    <ellipse cx="62" cy="48" rx="2" ry="3.5" fill="#18181b"/>
+                    <ellipse cx="50" cy="62" rx="2" ry="3.5" fill="#18181b"/>
+                    <!-- Smile -->
+                    <path d="M 44 52 Q 50 56 56 52" fill="none" stroke="#7f1d1d" stroke-width="2" stroke-linecap="round"/>
+                </svg>`,
+            grape: `
+                <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-md">
+                    <path d="M 50 22 C 45 12, 35 15, 35 15 C 35 15, 45 18, 48 24" fill="none" stroke="#713f12" stroke-width="3"/>
+                    <path d="M 50 22 C 65 15, 70 28, 52 26 Z" fill="#22c55e"/>
+                    <!-- Cluster -->
+                    <circle cx="38" cy="38" r="12" fill="#9333ea"/>
+                    <circle cx="62" cy="38" r="12" fill="#a855f7"/>
+                    <circle cx="50" cy="42" r="12" fill="#7e22ce"/>
+                    <circle cx="38" cy="58" r="11" fill="#a855f7"/>
+                    <circle cx="62" cy="58" r="11" fill="#7e22ce"/>
+                    <circle cx="50" cy="65" r="11" fill="#9333ea"/>
+                    <circle cx="50" cy="80" r="9" fill="#7e22ce"/>
+                    <!-- Eyes on center grape -->
+                    <circle cx="45" cy="42" r="2" fill="#ffffff"/>
+                    <circle cx="55" cy="42" r="2" fill="#ffffff"/>
+                </svg>`
+        };
+
+        const FRUIT_NAMES = {
+            apple: 'แอปเปิ้ล',
+            banana: 'กล้วย',
+            orange: 'ส้ม',
+            pineapple: 'สับปะรด',
+            strawberry: 'สตรอเบอร์รี่',
+            watermelon: 'แตงโม',
+            grape: 'องุ่น'
+        };
+
+        // Game Levels Configuration
+        const LEVELS = [
+            {
+                // Level 1: Standard ABAB pattern (Prompt Level 1)
+                id: 1,
+                title: "ด่านที่ 1 (หารูปแบบง่าย)",
+                patternType: "ABAB (สลับกัน 2 ชนิด)",
+                sequence: ['apple', 'banana', 'apple', 'banana', null],
+                answerIndex: 4,
+                correctAnswer: 'apple',
+                options: ['apple', 'banana', 'orange']
+            },
+            {
+                // Level 2: Standard AABAAB pattern (Prompt Level 2)
+                id: 2,
+                title: "ด่านที่ 2 (หารูปแบบซับซ้อนขึ้น)",
+                patternType: "AABAAB (ซ้ำ 2 ชิ้น สลับ 1 ชิ้น)",
+                sequence: ['orange', 'orange', 'pineapple', 'orange', 'orange', null],
+                answerIndex: 5,
+                correctAnswer: 'pineapple',
+                options: ['orange', 'pineapple', 'apple']
+            },
+            {
+                // Level 3: ABABAB extended pattern
+                id: 3,
+                title: "ด่านที่ 3 (สลับสตรอเบอร์รี่และองุ่น)",
+                patternType: "ABABAB (สลับ 2 ชนิด)",
+                sequence: ['strawberry', 'grape', 'strawberry', 'grape', 'strawberry', null],
+                answerIndex: 5,
+                correctAnswer: 'grape',
+                options: ['strawberry', 'grape', 'banana']
+            },
+            {
+                // Level 4: AABB Pattern
+                id: 4,
+                title: "ด่านที่ 4 (รูปแบบคู่ AABB)",
+                patternType: "AABB (ทีละคู่)",
+                sequence: ['watermelon', 'watermelon', 'apple', 'apple', 'watermelon', 'watermelon', null],
+                answerIndex: 6,
+                correctAnswer: 'apple',
+                options: ['watermelon', 'apple', 'pineapple']
+            },
+            {
+                // Level 5: ABCABC Pattern
+                id: 5,
+                title: "ด่านที่ 5 (รูปแบบชุด 3 ชนิด ABC)",
+                patternType: "ABCABC (ชุดละ 3 ชนิด)",
+                sequence: ['banana', 'pineapple', 'grape', 'banana', 'pineapple', null],
+                answerIndex: 5,
+                correctAnswer: 'grape',
+                options: ['banana', 'pineapple', 'grape']
+            },
+            {
+                // Level 6: Missing middle fruit slot!
+                id: 6,
+                title: "ด่านที่ 6 (ตามหาชิ้นส่วนตรงกลาง)",
+                patternType: "ABAB (เติมช่องว่างตรงกลาง)",
+                sequence: ['apple', null, 'apple', 'orange', 'apple', 'orange'],
+                answerIndex: 1,
+                correctAnswer: 'orange',
+                options: ['apple', 'orange', 'strawberry']
+            },
+            {
+                // Level 7: AAABAAAB Pattern
+                id: 7,
+                title: "ด่านที่ 7 (ซ้ำสามครั้ง AAAB)",
+                patternType: "AAABAAAB (ซ้ำ 3 แล้วสลับ 1)",
+                sequence: ['strawberry', 'strawberry', 'strawberry', 'banana', 'strawberry', 'strawberry', 'strawberry', null],
+                answerIndex: 7,
+                correctAnswer: 'banana',
+                options: ['strawberry', 'banana', 'watermelon']
+            },
+            {
+                // Level 8: ABBABB Pattern
+                id: 8,
+                title: "ด่านที่ 8 (รูปแบบเดี่ยวตามด้วยคู่ ABB)",
+                patternType: "ABBABB (เดี่ยว 1 คู่ 2)",
+                sequence: ['grape', 'watermelon', 'watermelon', 'grape', 'watermelon', null],
+                answerIndex: 5,
+                correctAnswer: 'watermelon',
+                options: ['grape', 'watermelon', 'orange']
+            },
+            {
+                // Level 9: ABCABC with missing middle
+                id: 9,
+                title: "ด่านที่ 9 (ปริศนาชุด 3 ชนิดตรงกลาง)",
+                patternType: "ABCABC (เติมตรงกลาง)",
+                sequence: ['pineapple', 'apple', 'orange', 'pineapple', null, 'orange'],
+                answerIndex: 4,
+                correctAnswer: 'apple',
+                options: ['pineapple', 'apple', 'orange']
+            },
+            {
+                // Level 10: Master Final Challenge
+                id: 10,
+                title: "ด่านที่ 10 (ด่านสุดยอดเซียนผลไม้)",
+                patternType: "ABCABC (ชุดผลไม้ฤดูร้อน)",
+                sequence: ['watermelon', 'strawberry', 'banana', 'watermelon', 'strawberry', 'banana', null],
+                answerIndex: 6,
+                correctAnswer: 'watermelon',
+                options: ['watermelon', 'strawberry', 'banana', 'grape']
+            }
+        ];
+    </script>
+
+    <script>
+        // Game State Variables
+        let currentLevelIndex = 0;
+        let totalStars = 0;
+        let selectedFruit = null;
+        let attemptsCount = 0;
+        let correctFirstTryCount = 0;
+
+        // DOM Elements
+        const fruitSequenceContainer = document.getElementById('fruit-sequence-container');
+        const fruitOptionsContainer = document.getElementById('fruit-options-container');
+        const levelDisplay = document.getElementById('level-display');
+        const starsDisplay = document.getElementById('stars-display');
+        const levelInstructions = document.getElementById('level-instructions');
+        const patternTypeBadge = document.getElementById('pattern-type-badge');
+        const feedbackBar = document.getElementById('feedback-bar');
+        const levelDotsContainer = document.getElementById('level-dots-container');
+
+        // Modals
+        const victoryModal = document.getElementById('victory-modal');
+        const victoryCard = document.getElementById('victory-card');
+        const victoryPatternExplain = document.getElementById('victory-pattern-explain');
+        const nextLevelBtn = document.getElementById('next-level-btn');
+
+        const gameCompleteModal = document.getElementById('game-complete-modal');
+        const restartGameBtn = document.getElementById('restart-game-btn');
+        const resetProgressBtn = document.getElementById('reset-progress-btn');
+
+        const helpBtn = document.getElementById('help-btn');
+        const helpModal = document.getElementById('help-modal');
+        const closeHelpBtn = document.getElementById('close-help-btn');
+        const understoodBtn = document.getElementById('understood-btn');
+
+        const soundBtn = document.getElementById('sound-btn');
+        const soundIcon = document.getElementById('sound-icon');
+
+        // Initialize App
+        window.addEventListener('load', () => {
+            renderLevelDots();
+            loadLevel(currentLevelIndex);
+            setupEventListeners();
+        });
+
+        function renderLevelDots() {
+            levelDotsContainer.innerHTML = '';
+            LEVELS.forEach((lvl, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `w-8 h-8 rounded-xl font-bold text-xs flex items-center justify-center transition-all ${
+                    idx === currentLevelIndex
+                        ? 'bg-indigo-600 text-white shadow-md scale-110'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-300'
+                }`;
+                btn.innerText = idx + 1;
+                btn.onclick = () => {
+                    soundFX.playPop();
+                    currentLevelIndex = idx;
+                    loadLevel(currentLevelIndex);
+                    renderLevelDots();
+                };
+                levelDotsContainer.appendChild(btn);
+            });
+        }
+
+        // Load specific level
+        function loadLevel(idx) {
+            attemptsCount = 0;
+            const level = LEVELS[idx];
+            
+            // Update UI Labels
+            levelDisplay.innerText = `${level.id} / ${LEVELS.length}`;
+            levelInstructions.innerText = `${level.title}: หาผลไม้ชิ้นต่อไปหรือชิ้นที่หายไป`;
+            patternTypeBadge.innerText = `รูปแบบ: ${level.patternType}`;
+            feedbackBar.innerHTML = `<span class="text-slate-500 font-medium text-sm">✨ ลากภาพมาเติม หรือคลิกเลือกผลไม้คำตอบด้านล่าง</span>`;
+
+            // Render Fruit Sequence
+            fruitSequenceContainer.innerHTML = '';
+            level.sequence.forEach((fruitKey, index) => {
+                if (index === level.answerIndex) {
+                    // Target Slot Placeholder
+                    const slot = document.createElement('div');
+                    slot.id = 'target-slot';
+                    slot.className = 'slot-target w-20 h-20 md:w-24 md:h-24 rounded-2xl flex flex-col items-center justify-center cursor-pointer shadow-inner relative bounce-target';
+                    slot.setAttribute('data-index', index);
+                    
+                    slot.innerHTML = `
+                        <span class="text-2xl md:text-3xl font-black text-amber-500">❓</span>
+                        <span class="text-[10px] md:text-xs font-bold text-amber-600 mt-1">วางตรงนี้</span>
+                    `;
+
+                    // Drag and Drop Events on Target Slot
+                    slot.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        slot.classList.add('drag-over');
+                    });
+
+                    slot.addEventListener('dragleave', () => {
+                        slot.classList.remove('drag-over');
+                    });
+
+                    slot.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        slot.classList.remove('drag-over');
+                        const fruitChoice = e.dataTransfer.getData('text/plain');
+                        if (fruitChoice) {
+                            checkAnswer(fruitChoice);
+                        }
+                    });
+
+                    // Click Target Slot when option is selected
+                    slot.addEventListener('click', () => {
+                        if (selectedFruit) {
+                            checkAnswer(selectedFruit);
+                        }
+                    });
+
+                    fruitSequenceContainer.appendChild(slot);
+                } else {
+                    // Regular Fruit Card in Row
+                    const card = document.createElement('div');
+                    card.className = 'w-20 h-20 md:w-24 md:h-24 bg-white rounded-2xl p-2 shadow-md border-2 border-slate-100 flex flex-col items-center justify-center animate-float';
+                    card.style.animationDelay = `${(index * 0.15).toFixed(2)}s`;
+                    
+                    card.innerHTML = `
+                        <div class="w-12 h-12 md:w-14 md:h-14">${FRUIT_SVGS[fruitKey]}</div>
+                        <span class="text-[10px] md:text-xs font-bold text-slate-600 mt-0.5">${FRUIT_NAMES[fruitKey]}</span>
+                    `;
+                    fruitSequenceContainer.appendChild(card);
+                }
+            });
+
+            // Render Choice Options
+            fruitOptionsContainer.innerHTML = '';
+            level.options.forEach((fruitKey) => {
+                const optCard = document.createElement('div');
+                optCard.className = 'fruit-card w-20 h-20 md:w-24 md:h-24 bg-gradient-to-b from-white to-amber-50/50 rounded-2xl p-2 border-2 border-amber-200 shadow-md cursor-pointer flex flex-col items-center justify-center relative';
+                optCard.setAttribute('draggable', 'true');
+                optCard.setAttribute('data-fruit', fruitKey);
+
+                optCard.innerHTML = `
+                    <div class="w-12 h-12 md:w-14 md:h-14 pointer-events-none">${FRUIT_SVGS[fruitKey]}</div>
+                    <span class="text-[10px] md:text-xs font-bold text-amber-800 mt-0.5 pointer-events-none">${FRUIT_NAMES[fruitKey]}</span>
+                `;
+
+                // Drag Start Event
+                optCard.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', fruitKey);
+                    optCard.classList.add('opacity-50');
+                    soundFX.playPop();
+                });
+
+                optCard.addEventListener('dragend', () => {
+                    optCard.classList.remove('opacity-50');
+                });
+
+                // Click / Tap Event
+                optCard.addEventListener('click', () => {
+                    soundFX.playPop();
+                    // Direct click to check answer for effortless interaction
+                    checkAnswer(fruitKey);
+                });
+
+                fruitOptionsContainer.appendChild(optCard);
+            });
+
+            renderLevelDots();
+        }
+
+        function checkAnswer(chosenFruit) {
+            attemptsCount++;
+            const level = LEVELS[currentLevelIndex];
+
+            if (chosenFruit === level.correctAnswer) {
+                // Correct Answer!
+                soundFX.playCorrect();
+
+                if (attemptsCount === 1) {
+                    correctFirstTryCount++;
+                    totalStars += 3;
+                } else {
+                    totalStars += 1;
+                }
+                starsDisplay.innerText = totalStars;
+
+                // Fill target slot visually
+                const slot = document.getElementById('target-slot');
+                if (slot) {
+                    slot.className = 'w-20 h-20 md:w-24 md:h-24 bg-emerald-100 border-4 border-emerald-500 rounded-2xl p-2 shadow-lg flex flex-col items-center justify-center transform scale-110 transition-transform';
+                    slot.innerHTML = `
+                        <div class="w-12 h-12 md:w-14 md:h-14">${FRUIT_SVGS[chosenFruit]}</div>
+                        <span class="text-[10px] md:text-xs font-black text-emerald-700 mt-0.5">${FRUIT_NAMES[chosenFruit]}</span>
+                    `;
+                }
+
+                feedbackBar.innerHTML = `
+                    <span class="text-emerald-600 font-extrabold flex items-center space-x-1">
+                        <i class="fa-solid fa-circle-check text-xl"></i>
+                        <span>ถูกต้อง! เก่งมากครับ 🎉</span>
+                    </span>
+                `;
+
+                // Trigger Confetti Celebration
+                confetti({
+                    particleCount: 80,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+
+                // Prepare and show Victory Modal after brief delay
+                setTimeout(() => {
+                    showVictoryModal();
+                }, 800);
+
+            } else {
+                // Incorrect Answer
+                soundFX.playWrong();
+                feedbackBar.innerHTML = `
+                    <span class="text-rose-500 font-extrabold flex items-center space-x-1 animate-bounce">
+                        <i class="fa-solid fa-circle-xmark text-xl"></i>
+                        <span>ยังไม่ถูกต้องนะ ลองสังเกตรูปแบบอีกครั้ง! 💡</span>
+                    </span>
+                `;
+
+                // Shake effect on slot
+                const slot = document.getElementById('target-slot');
+                if (slot) {
+                    slot.classList.add('translate-x-2');
+                    setTimeout(() => slot.classList.remove('translate-x-2'), 100);
+                    setTimeout(() => slot.classList.add('-translate-x-2'), 200);
+                    setTimeout(() => slot.classList.remove('-translate-x-2'), 300);
+                }
+            }
+        }
+
+        // Show Victory Overlay
+        function showVictoryModal() {
+            const level = LEVELS[currentLevelIndex];
+            
+            // Build visual pattern sequence explanation text
+            let fullPatternHTML = '';
+            level.sequence.forEach((f, i) => {
+                const item = (i === level.answerIndex) ? level.correctAnswer : f;
+                fullPatternHTML += `<span class="inline-block mx-1 transform hover:scale-125 transition-transform">${getFruitEmoji(item)}</span>`;
+            });
+            victoryPatternExplain.innerHTML = fullPatternHTML;
+
+            victoryModal.classList.remove('opacity-0', 'pointer-events-none');
+            victoryCard.classList.remove('scale-90');
+            victoryCard.classList.add('scale-100');
+        }
+
+        function getFruitEmoji(fruitKey) {
+            const map = {
+                apple: '🍎',
+                banana: '🍌',
+                orange: '🍊',
+                pineapple: '🍍',
+                strawberry: '🍓',
+                watermelon: '🍉',
+                grape: '🍇'
+            };
+            return map[fruitKey] || '🍎';
+        }
+
+        function setupEventListeners() {
+            // Next Level Button
+            nextLevelBtn.addEventListener('click', () => {
+                soundFX.playPop();
+                victoryModal.classList.add('opacity-0', 'pointer-events-none');
+                
+                if (currentLevelIndex < LEVELS.length - 1) {
+                    currentLevelIndex++;
+                    loadLevel(currentLevelIndex);
+                } else {
+                    // Complete all levels!
+                    showGameCompleteModal();
+                }
+            });
+
+            // Restart Game Button
+            restartGameBtn.addEventListener('click', () => {
+                soundFX.playPop();
+                gameCompleteModal.classList.add('opacity-0', 'pointer-events-none');
+                currentLevelIndex = 0;
+                totalStars = 0;
+                correctFirstTryCount = 0;
+                starsDisplay.innerText = '0';
+                loadLevel(0);
+            });
+
+            // Reset Button
+            resetProgressBtn.addEventListener('click', () => {
+                soundFX.playPop();
+                currentLevelIndex = 0;
+                totalStars = 0;
+                starsDisplay.innerText = '0';
+                loadLevel(0);
+            });
+
+            // Sound Toggle
+            soundBtn.addEventListener('click', () => {
+                soundFX.enabled = !soundFX.enabled;
+                if (soundFX.enabled) {
+                    soundIcon.className = 'fa-solid fa-volume-high text-lg text-emerald-600';
+                    soundFX.playPop();
+                } else {
+                    soundIcon.className = 'fa-solid fa-volume-xmark text-lg text-slate-400';
+                }
+            });
+
+            // Help Modal Events
+            helpBtn.addEventListener('click', () => {
+                soundFX.playPop();
+                helpModal.classList.remove('opacity-0', 'pointer-events-none');
+            });
+
+            closeHelpBtn.addEventListener('click', () => {
+                soundFX.playPop();
+                helpModal.classList.add('opacity-0', 'pointer-events-none');
+            });
+
+            understoodBtn.addEventListener('click', () => {
+                soundFX.playPop();
+                helpModal.classList.add('opacity-0', 'pointer-events-none');
+            });
+        }
+
+        function showGameCompleteModal() {
+            soundFX.playFanfare();
+            const accuracy = Math.round((correctFirstTryCount / LEVELS.length) * 100);
+            document.getElementById('final-stars').innerText = `⭐ ${totalStars}`;
+            document.getElementById('final-accuracy').innerText = `${accuracy}%`;
+
+            gameCompleteModal.classList.remove('opacity-0', 'pointer-events-none');
+            
+            confetti({
+                particleCount: 150,
+                spread: 100,
+                origin: { y: 0.5 }
+            });
+        }
+    </script>
+</body>
+</html>
